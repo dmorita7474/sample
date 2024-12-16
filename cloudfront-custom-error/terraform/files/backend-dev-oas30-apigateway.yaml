@@ -1,0 +1,35 @@
+openapi: "3.0.1"
+info:
+  title: "backend"
+  version: "2024-12-13T01:10:47Z"
+servers:
+- url: "https://vm7qu5htt6.execute-api.ap-northeast-1.amazonaws.com/{basePath}"
+  variables:
+    basePath:
+      default: "dev"
+paths:
+  /api/hello:
+    get:
+      responses:
+        "503":
+          description: "503 response"
+          content: {}
+        "200":
+          description: "200 response"
+          content: {}
+      x-amazon-apigateway-integration:
+        responses:
+          "200":
+            statusCode: "200"
+            responseTemplates:
+              application/json: "{\"message\": \"hello\"}\n"
+          ^50.*$:
+            statusCode: "503"
+            responseTemplates:
+              application/json: "{\"message\": \"Service Unavailable\"}\n"
+        requestTemplates:
+          application/json: "{\n   \"statusCode\" : ${status_code}\n}\n"
+        passthroughBehavior: "when_no_match"
+        timeoutInMillis: 29000
+        type: "mock"
+components: {}
