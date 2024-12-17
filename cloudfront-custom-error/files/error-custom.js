@@ -9,7 +9,6 @@ const content503 = `<!DOCTYPE html>
     </body>
 </html>
 `
-
 const content404 = `<!DOCTYPE html>
 <html>
     <head>
@@ -24,12 +23,12 @@ const content404 = `<!DOCTYPE html>
 function handler(event) {
     let response = event.response;
     // 特定のエラーの時、bodyを固定ページで上書き
-    if (response.statusCode === 503) {
+    if (response.statusCode === "503") {
         response.body = {
             "encoding" : "text",
             "data" : content503
         }
-    } else if (response.statusCode === 404) {
+    } else if (response.statusCode === "404") {
         response.body = {
             "encoding" : "text",
             "data" : content404

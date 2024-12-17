@@ -17,8 +17,9 @@ module "s3_frontend" {
 
   bucket = "frontend-${data.aws_caller_identity.current.account_id}"
 
+  # 検証環境撤収時にForce Destroyしたいのでバージョニングfalse
   versioning = {
-    enabled = true
+    enabled = false
   }
 }
 
@@ -100,18 +101,21 @@ module "cloudfront" {
       #  function_arn = aws_cloudfront_function.viewer_response.arn
       #}
       # エラーページ用
-      #"viewer-request" = {
-      #  function_arn = aws_cloudfront_function.error_request.arn
-      #}
-      #"viewer-response" = {
-      #  function_arn = aws_cloudfront_function.error_response.arn
-      #}
-    }
-    lambda_function_association = {
-      "origin-response" = {
-        lambda_arn = module.lambda_at_edge.lambda_function_qualified_arn
+      "viewer-request" = {
+        function_arn = aws_cloudfront_function.maintenance_request.arn
       }
+      "viewer-response" = {
+        function_arn = aws_cloudfront_function.maintenance_response.arn
+      }
+      #"viewer-response" = {
+      #  function_arn = aws_cloudfront_function.error_custom_response.arn
+      #}
     }
+    #lambda_function_association = {
+    #  "origin-response" = {
+    #    lambda_arn = module.lambda_at_edge.lambda_function_qualified_arn
+    #  }
+    #}
   }
 
   ordered_cache_behavior = [
@@ -145,7 +149,7 @@ module "cloudfront" {
   #  {
   #    error_code         = 404
   #    response_code      = 404
-  #    response_page_path = "/error404.html"
+  #    response_page_path = "/404.html"
   #  },
   #  {
   #    error_code         = 503
@@ -165,23 +169,34 @@ resource "aws_cloudfront_function" "main" {
 }
 
 # エラー対応function
-#resource "aws_cloudfront_function" "maintenance_request" {
-#  name    = "error-request"
-#  runtime = "cloudfront-js-2.0"
-#  comment = "Error for request"
-#  publish = true
-#  code    = file("${path.module}/files/error-request.js")
-#}
+resource "aws_cloudfront_function" "maintenance_request" {
+  name    = "error-request"
+  runtime = "cloudfront-js-2.0"
+  comment = "Error for request"
+  publish = true
+  code    = file("${path.module}/files/maintenance-request.js")
+}
 
-resource "aws_cloudfront_function" "viewer_response" {
+resource "aws_cloudfront_function" "maintenance_response" {
 
   name    = "viewer-response"
   runtime = "cloudfront-js-2.0"
   comment = "Viewer response"
   publish = true
-  code    = file("${path.module}/files/viewer-response.js")
+  code    = file("${path.module}/files/maintenance-response.js")
 }
 
+resource "aws_cloudfront_function" "error_custom_response" {
+
+  name    = "error-custom"
+  runtime = "cloudfront-js-2.0"
+  comment = "Error Customize"
+  publish = true
+  code    = file("${path.module}/files/error-custom.js")
+}
+
+# エラー対応Lambda@Edge
+# Lambda@Edgeはバージニア北部のみ対応の為プロバイダ指定
 provider "aws" {
   region = "us-east-1"
   alias  = "use1"
@@ -280,11 +295,31 @@ resource "aws_s3_object" "error_page_500" {
   etag = filemd5("${path.module}/files/error500.html")
 }
 
-resource "aws_s3_object" "error_page_404" {
-  bucket       = module.s3_frontend.s3_bucket_id
-  key          = "error404.html"
-  source       = "${path.module}/files/error404.html"
-  content_type = "text/html"
+#resource "aws_s3_object" "error_page_404" {
+#  bucket       = module.s3_frontend.s3_bucket_id
+#  key          = "error404.html"
+#  source       = "${path.module}/files/error404.html"
+#  content_type = "text/html"
+#
+#  etag = filemd5("${path.module}/files/error404.html")
+#}
 
-  etag = filemd5("${path.module}/files/error404.html")
+module "template_files" {
+  source   = "hashicorp/dir/template"
+  base_dir = "${path.module}/files/frontend-app/out"
+}
+
+resource "aws_s3_object" "frontend_artifacts" {
+  for_each = module.template_files.files
+
+  bucket       = module.s3_frontend.s3_bucket_id
+  key          = each.key
+  content_type = each.value.content_type
+  source       = each.value.source_path
+  content      = each.value.content
+  etag         = each.value.digests.md5
+}
+
+output "cloudfront_fqdn" {
+  value = module.cloudfront.cloudfront_distribution_domain_name
 }
