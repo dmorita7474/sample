@@ -92,8 +92,24 @@ module "cloudfront" {
     cache_policy_id            = "658327ea-f89d-4fab-a63d-7e88639e58f6" # Managed-CachingOptimized
     response_headers_policy_id = "67f7725c-6f97-4210-82d7-5512b31e9d03" # Managed-SecurityHeadersPolicy
     function_association = {
+      # 通常用
       "viewer-request" = {
         function_arn = aws_cloudfront_function.main.arn
+      }
+      #"viewer-response" = {
+      #  function_arn = aws_cloudfront_function.viewer_response.arn
+      #}
+      # エラーページ用
+      #"viewer-request" = {
+      #  function_arn = aws_cloudfront_function.error_request.arn
+      #}
+      #"viewer-response" = {
+      #  function_arn = aws_cloudfront_function.error_response.arn
+      #}
+    }
+    lambda_function_association = {
+      "origin-response" = {
+        lambda_arn = module.lambda_at_edge.lambda_function_qualified_arn
       }
     }
   }
@@ -125,10 +141,16 @@ module "cloudfront" {
       signing_protocol = "sigv4"
   } }
 
-  #custom_error_response = [{
-  #  error_code         = 503
-  #  response_code      = 503
-  #  response_page_path = "/error500.html"
+  #custom_error_response = [
+  #  {
+  #    error_code         = 404
+  #    response_code      = 404
+  #    response_page_path = "/error404.html"
+  #  },
+  #  {
+  #    error_code         = 503
+  #    response_code      = 503
+  #    response_page_path = "/error500.html"
   #  }
   #]
 }
@@ -140,6 +162,48 @@ resource "aws_cloudfront_function" "main" {
   comment = "Rewriting trailin slash"
   publish = true
   code    = file("${path.module}/files/trailing-slash.js")
+}
+
+# エラー対応function
+#resource "aws_cloudfront_function" "maintenance_request" {
+#  name    = "error-request"
+#  runtime = "cloudfront-js-2.0"
+#  comment = "Error for request"
+#  publish = true
+#  code    = file("${path.module}/files/error-request.js")
+#}
+
+resource "aws_cloudfront_function" "viewer_response" {
+
+  name    = "viewer-response"
+  runtime = "cloudfront-js-2.0"
+  comment = "Viewer response"
+  publish = true
+  code    = file("${path.module}/files/viewer-response.js")
+}
+
+provider "aws" {
+  region = "us-east-1"
+  alias  = "use1"
+}
+
+module "lambda_at_edge" {
+  source  = "terraform-aws-modules/lambda/aws"
+  version = "7.17.0"
+
+  providers = {
+    aws = aws.use1
+  }
+
+  lambda_at_edge = true
+
+  function_name = "lambda-at-edge"
+  description   = "lambda@edge function"
+  handler       = "index.handler"
+  runtime       = "nodejs22.x"
+
+  source_path = "${path.module}/files/lambda-edge"
+  publish     = true
 }
 
 
@@ -207,11 +271,20 @@ resource "aws_s3_bucket_policy" "allow_access_from_cloudfront" {
   policy = data.aws_iam_policy_document.bp_frontend.json
 }
 
-resource "aws_s3_object" "error_page" {
+resource "aws_s3_object" "error_page_500" {
   bucket       = module.s3_frontend.s3_bucket_id
   key          = "error500.html"
   source       = "${path.module}/files/error500.html"
   content_type = "text/html"
 
   etag = filemd5("${path.module}/files/error500.html")
+}
+
+resource "aws_s3_object" "error_page_404" {
+  bucket       = module.s3_frontend.s3_bucket_id
+  key          = "error404.html"
+  source       = "${path.module}/files/error404.html"
+  content_type = "text/html"
+
+  etag = filemd5("${path.module}/files/error404.html")
 }
