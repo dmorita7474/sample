@@ -1,1 +1,0 @@
-{"filename": "builds/fab76b8b0e73119656d2704e520a05e4c71f1651418d56f3556c0aec810511ed.zip", "runtime": "nodejs22.x", "artifacts_dir": "builds", "build_plan": [[["zip", "./files/lambda-edge", null]]]}
