@@ -1,7 +1,6 @@
 ###############################################################################
-# 対象リソース: CloudFront, S3, API Gateway
+# 対象リソース: CloudFront, Lambda@Edge, S3, API Gateway
 ###############################################################################
-# ドメイン名とACMは既に用意してあるものを指定
 variable "backend_status_code" {
   type        = number
   description = "backend status code"
@@ -101,12 +100,12 @@ module "cloudfront" {
       #  function_arn = aws_cloudfront_function.viewer_response.arn
       #}
       # エラーページ用
-      "viewer-request" = {
-        function_arn = aws_cloudfront_function.maintenance_request.arn
-      }
-      "viewer-response" = {
-        function_arn = aws_cloudfront_function.maintenance_response.arn
-      }
+      #"viewer-request" = {
+      #  function_arn = aws_cloudfront_function.maintenance_request.arn
+      #}
+      #"viewer-response" = {
+      #  function_arn = aws_cloudfront_function.maintenance_response.arn
+      #}
       #"viewer-response" = {
       #  function_arn = aws_cloudfront_function.error_custom_response.arn
       #}
@@ -294,15 +293,6 @@ resource "aws_s3_object" "error_page_500" {
 
   etag = filemd5("${path.module}/files/error500.html")
 }
-
-#resource "aws_s3_object" "error_page_404" {
-#  bucket       = module.s3_frontend.s3_bucket_id
-#  key          = "error404.html"
-#  source       = "${path.module}/files/error404.html"
-#  content_type = "text/html"
-#
-#  etag = filemd5("${path.module}/files/error404.html")
-#}
 
 module "template_files" {
   source   = "hashicorp/dir/template"
