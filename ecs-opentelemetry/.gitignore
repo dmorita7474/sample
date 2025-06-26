@@ -1,0 +1,40 @@
+
+# General
+.DS_Store
+Thumbs.db
+
+# Terraform
+.terraform/
+*.tfstate
+*.tfstate.*
+crash.log
+*.tfvars
+*.tfvars.json
+override.tf
+override.tf.json
+*_override.tf
+*_override.tf.json
+.terraformrc
+terraform.rc
+
+# Python / FastAPI Backend
+backend/__pycache__/
+backend/.venv/
+backend/venv/
+backend/env/
+backend/*.pyc
+backend/.pytest_cache/
+
+# Node.js / Next.js Frontend
+frontend/node_modules/
+frontend/.next/
+frontend/npm-debug.log*
+frontend/yarn-debug.log*
+frontend/yarn-error.log*
+frontend/.env.local
+frontend/.env.development.local
+frontend/.env.test.local
+frontend/.env.production.local
+
+# Local Environment
+.env
