@@ -19,6 +19,25 @@ ECS上でOpenTelemetryエージェントを通じてOTLPでCloudWatchAgentに送
 - [AWS CLI](https://aws.amazon.com/cli/) がインストール���れ、デプロイ対象のAWSアカウントで認証情報が設定済みであること。
 - [Terraform](https://www.terraform.io/downloads.html) (v1.0以降) がインストール済みであること。
 - [Docker](https://www.docker.com/get-started) がインストール済みであること。
+- [Python](https://www.python.org/downloads/) と `pip` がインストール済みであること（アーキテクチャ図の生成に必要）。
+
+### 1.5. アーキテクチャ図の生成
+
+このプロジェクトのアーキテクチャ図は`diagrams`ライブラリを使用してPythonスクリプトから生成されます。
+
+1.  **必要なライブラリのインストール**
+
+    ```bash
+    pip install diagrams
+    ```
+
+2.  **図の生成**
+
+    ```bash
+    python docs/architecture.py
+    ```
+
+    これにより、`docs/architecture.png`が生成・更新されます。
 
 ### 2. インフラストラクチャのデプロイ
 

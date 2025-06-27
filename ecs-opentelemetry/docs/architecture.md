@@ -15,59 +15,12 @@
 
 ### 1.2. 全体アーキテクチャ図
 
-```mermaid
-graph TD
-    subgraph "Internet"
-        User[ユーザー]
-    end
+![Architecture Diagram](./architecture.png)
 
-    subgraph "AWS Cloud"
-        subgraph "VPC"
-            subgraph "Public Subnet"
-                ALB[Application Load Balancer]
-            end
+この図は`docs/architecture.py`によって生成されます。図を更新する場合は、スクリプトを実行してください。
 
-            subgraph "Private Subnet"
-                subgraph "ECS Task (Next.js)"
-                    direction LR
-                    NextApp[Next.js App] --> OTelSidecar1[OTel Collector]
-                end
-
-                subgraph "ECS Task (FastAPI)"
-                    direction LR
-                    FastAPIApp[FastAPI App] --> OTelSidecar2[OTel Collector]
-                end
-                
-                Aurora[Aurora Serverless v2]
-            end
-
-            CloudMap[Cloud Map]
-            SecretsManager[Secrets Manager]
-        end
-
-        subgraph "AWS Observability"
-            CW[CloudWatch]
-            XRay[X-Ray]
-        end
-
-        ECR[ECR]
-    end
-
-    User --> ALB
-    ALB --> NextApp
-    NextApp -->|API Call via Service Discovery| FastAPIApp
-    FastAPIApp --> Aurora
-    
-    OTelSidecar1 --> CW
-    OTelSidecar1 --> XRay
-    OTelSidecar2 --> CW
-    OTelSidecar2 --> XRay
-
-    NextApp -.->|Image Pull| ECR
-    FastAPIApp -.->|Image Pull| ECR
-    FastAPIApp -.->|Get Credentials| SecretsManager
-
-    FastAPIApp -- Dotted --> CloudMap
+```bash
+python docs/architecture.py
 ```
 
 ## 2. アプリケーション仕様
